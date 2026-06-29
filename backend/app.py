@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pathlib import Path
+import os
 
 from backend.routes.api import router as api_router
 from backend.services.rag_service import rag_service
@@ -34,7 +35,7 @@ async def lifespan(app: FastAPI):
         print("  App will still work but without knowledge base context.")
     print("=" * 55 + "\n")
 
-    yield  # App is running here
+    yield
 
     # --- SHUTDOWN ---
     print("MealMate shutting down...")
@@ -58,15 +59,19 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api")
 
 frontend_dir = Path(__file__).parent.parent / "frontend"
-app.mount("/css", StaticFiles(directory=str(frontend_dir / "css")), name="css")
-app.mount("/js", StaticFiles(directory=str(frontend_dir / "js")), name="js")
+if frontend_dir.exists():
+    app.mount("/css", StaticFiles(directory=str(frontend_dir / "css")), name="css")
+    app.mount("/js", StaticFiles(directory=str(frontend_dir / "js")), name="js")
 
 
 @app.get("/")
 async def serve_index():
-    return FileResponse(str(frontend_dir / "index.html"))
+    if frontend_dir.exists():
+        return FileResponse(str(frontend_dir / "index.html"))
+    return {"message": "MealMate API is running. Frontend not found."}
+
 
 if __name__ == "__main__":
     import uvicorn
-    from backend.config import settings
-    uvicorn.run("backend.app:app", host="0.0.0.0", port=settings.PORT, reload=True)
+    port = int(os.environ.get("PORT", 7860))
+    uvicorn.run("backend.app:app", host="0.0.0.0", port=port)

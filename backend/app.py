@@ -68,4 +68,5 @@ async def serve_index():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("backend.app:app", host="0.0.0.0", port=8000, reload=True)
+    from backend.config import settings
+    uvicorn.run("backend.app:app", host="0.0.0.0", port=settings.PORT, reload=True)
